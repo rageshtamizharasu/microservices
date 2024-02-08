@@ -1,12 +1,13 @@
 pipeline {
     agent any
     stages {
-        stage('SCM Checkout'){
+        stage('SCM Checkout') {
             steps {
-            git branch: 'main', url: 'https://github.com/rageshtamizharasu/microservices.git'
-            sh 'ls'
+                git branch: 'main', url: 'https://github.com/rageshtamizharasu/microservices.git'
+                sh 'ls'
             }
         }
+
         stage('SonarQube Analysis') {
             steps {
                 parallel (
@@ -14,12 +15,12 @@ pipeline {
                         script {
                             dir('cart-microservice-nodejs') {
                                 def scannerHome = tool 'sonarscanner4'
-                                 withSonarQubeEnv('sonar-pro') {
-                                     sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=cart-nodejs"
-                                 }
+                                withSonarQubeEnv('sonar-pro') {
+                                    sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=cart-nodejs"
+                                }
                             }
                             dir('ui-web-app-reactjs') {
-                                def scannerHome = tool 'sonarscanner4';
+                                def scannerHome = tool 'sonarscanner4'
                                 withSonarQubeEnv('sonar-pro') {
                                     sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=ui-reactjs"
                                 }
@@ -29,19 +30,19 @@ pipeline {
                     'spring boot application': {
                         script {
                             dir('offers-microservice-spring-boot') {
-                                def mvn = tool 'maven3';
+                                def mvn = tool 'maven3'
                                 withSonarQubeEnv('sonar-pro') {
                                     sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=offers-spring-boot -Dsonar.projectName=offers-spring-boot"
                                 }
                             }
                             dir('shoes-microservice-spring-boot') {
-                                def mvn = tool 'maven3';
+                                def mvn = tool 'maven3'
                                 withSonarQubeEnv('sonar-pro') {
                                     sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=shoe-spring-boot -Dsonar.projectName=shoes-spring-boot"
                                 }
                             }
                             dir('zuul-api-gateway') {
-                                def mvn = tool 'maven3';
+                                def mvn = tool 'maven3'
                                 withSonarQubeEnv('sonar-pro') {
                                     sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=zuul-api -Dsonar.projectName=zuul-api"
                                 }
@@ -49,21 +50,21 @@ pipeline {
                         }
                     },
                     'python app': {
-                        script{
+                        script {
                             dir('wishlist-microservice-python') {
-                                def scannerHome = tool 'sonarscanner4';
+                                def scannerHome = tool 'sonarscanner4'
                                 withSonarQubeEnv('sonar-pro') {
                                     sh """/var/lib/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/sonarscanner4/bin/sonar-scanner \
-                                    -D sonar.projectVersion=1.0-SNAPSHOT \
-                                    -D sonar.sources=. \
-                                    -D sonar.login=admin \
-                                    -D sonar.password=admin \
-                                    -D sonar.projectKey=project \
-                                    -D sonar.projectName=wishlist-py \
-                                    -D sonar.inclusions=index.py \
-                                    -D sonar.sourceEncoding=UTF-8 \
-                                    -D sonar.language=python \
-                                    -D sonar.host.url=localhost:9000/"""
+                                        -D sonar.projectVersion=1.0-SNAPSHOT \
+                                        -D sonar.sources=. \
+                                        -D sonar.login=admin \
+                                        -D sonar.password=admin123 \
+                                        -D sonar.projectKey=project \
+                                        -D sonar.projectName=wishlist-py \
+                                        -D sonar.inclusions=index.py \
+                                        -D sonar.sourceEncoding=UTF-8 \
+                                        -D sonar.language=python \
+                                        -D sonar.host.url=http://localhost:9000/"""
                                 }
                             }
                         }
@@ -71,16 +72,20 @@ pipeline {
                 )
             }
         }
-        stage ('Build Docker Image and push'){
+
+        stage('Build Docker Image and push') {
             steps {
                 parallel (
                     'docker login': {
-                        withCredentials([string(credentialsId: 'dockerPass', variable: 'dockerPassword')]) {
-                            sh "docker login -u ragesh2u -p ${dockerPassword}"
+                        script {
+                        // Directly assign Docker ID and password
+                        def dockerId = 'ragesh2u'
+                        
+                        sh "docker login -u ${dockerId} -p ${dockerPassword}"
                         }
                     },
                     'ui-web-app-reactjs': {
-                        dir('ui-web-app-reactjs'){
+                        dir('ui-web-app-reactjs') {
                             sh """
                             docker build -t ragesh2u/ui:v1 .
                             docker push ragesh2u/ui:v1
@@ -88,8 +93,8 @@ pipeline {
                             """
                         }
                     },
-                    'zuul-api-gateway' : {
-                        dir('zuul-api-gateway'){
+                    'zuul-api-gateway': {
+                        dir('zuul-api-gateway') {
                             sh """
                             docker build -t ragesh2u/api:v1 .
                             docker push ragesh2u/api:v1
@@ -98,7 +103,7 @@ pipeline {
                         }
                     },
                     'offers-microservice-spring-boot': {
-                        dir('offers-microservice-spring-boot'){
+                        dir('offers-microservice-spring-boot') {
                             sh """
                             docker build -t ragesh2u/spring:v1 .
                             docker push ragesh2u/spring:v1
@@ -107,16 +112,16 @@ pipeline {
                         }
                     },
                     'shoes-microservice-spring-boot': {
-                        dir('shoes-microservice-spring-boot'){
+                        dir('shoes-microservice-spring-boot') {
                             sh """
-                            docker build -t ragesh2u/spring:v2 .
-                            docker push ragesh2u/spring:v2
-                            docker rmi ragesh2u/spring:v2
+                            docker build -t ragesh2u/springs:v2 .
+                            docker push ragesh2u/springs:v2
+                            docker rmi ragesh2u/springs:v2
                             """
                         }
                     },
                     'cart-microservice-nodejs': {
-                        dir('cart-microservice-nodejs'){
+                        dir('cart-microservice-nodejs') {
                             sh """
                             docker build -t ragesh2u/ui:v2 .
                             docker push ragesh2u/ui:v2
@@ -125,7 +130,7 @@ pipeline {
                         }
                     },
                     'wishlist-microservice-python': {
-                        dir('wishlist-microservice-python'){
+                        dir('wishlist-microservice-python') {
                             sh """
                             docker build -t ragesh2u/python:v1 .
                             docker push ragesh2u/python:v1
@@ -136,8 +141,9 @@ pipeline {
                 )
             }
         }
-        stage ('Deploy on k8s'){
-            steps{
+
+        stage('Deploy on k8s') {
+            steps {
                 parallel (
                     'deploy on k8s': {
                         script {
